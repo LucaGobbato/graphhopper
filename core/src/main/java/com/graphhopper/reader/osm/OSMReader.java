@@ -329,16 +329,11 @@ public class OSMReader implements TurnCostParser.ExternalInternalMap {
         if (!way.hasTags())
             return;
 
-        EncodingManager.AcceptWay acceptWay = new EncodingManager.AcceptWay();
-        if (!encodingManager.acceptWay(way, acceptWay))
+        // todonow: we can now remove this duplication
+        if (!encodingManager.acceptWay(way, new EncodingManager.AcceptWay()))
             return;
 
         setArtificialWayTags(way);
-
-        IntsRef relationFlags = getRelFlagsMap(way.getId());
-        IntsRef edgeFlags = encodingManager.handleWayTags(way, acceptWay, relationFlags);
-        if (edgeFlags.isEmpty())
-            return;
 
         LongArrayList osmNodeIds = way.getNodes();
         LongArrayList segment = new LongArrayList();
@@ -351,7 +346,7 @@ public class OSMReader implements TurnCostParser.ExternalInternalMap {
                 // for example an OSM way might lead out of the area for which nodes are available and back into it,
                 // and we do not want to connect the exit/entry points using a straight line
                 if (segment.size() > 1) {
-                    handleSegment(segment, edgeFlags, way);
+                    handleSegment(segment, way);
                     segment = new LongArrayList();
                 }
             } else if (id < TOWER_NODE) {
@@ -360,30 +355,23 @@ public class OSMReader implements TurnCostParser.ExternalInternalMap {
                     LOGGER.warn("OSM node {} is a barrier node at a junction, the barrier will be ignored", osmNodeId.value);
                 if (!segment.isEmpty()) {
                     segment.add(osmNodeId.value);
-                    handleSegment(segment, edgeFlags, way);
+                    handleSegment(segment, way);
                     segment = new LongArrayList();
                 }
                 // we include this node also for the *next* segment
                 segment.add(osmNodeId.value);
-            } else if (isBarrier && isOnePassable(encodingManager.getAccessEncFromNodeFlags(nodeFlags), edgeFlags)) {
-                // todonow: what if !isOnePassble?? -> so far this was ok, because in this case the entire way is not accessible
+            } else if (isBarrier) {
                 long extraNode = addBarrierNode(osmNodeId.value);
                 // a pillar node that is a barrier
                 if (!segment.isEmpty()) {
                     // the segment up to the barrier
                     segment.add(osmNodeId.value);
-                    handleSegment(segment, edgeFlags, way);
+                    handleSegment(segment, way);
                     // barrier segment
                     segment = new LongArrayList();
                     segment.add(osmNodeId.value);
                     segment.add(extraNode);
-                    IntsRef barrierEdgeFlags = IntsRef.deepCopyOf(edgeFlags);
-                    // clear blocked directions from flags
-                    for (BooleanEncodedValue accessEnc : encodingManager.getAccessEncFromNodeFlags(nodeFlags)) {
-                        accessEnc.setBool(false, barrierEdgeFlags, false);
-                        accessEnc.setBool(true, barrierEdgeFlags, false);
-                    }
-                    handleSegment(segment, barrierEdgeFlags, way);
+                    handleSegment(segment, way, true);
                     segment = new LongArrayList();
                 }
                 // we include the extra node also for the *next* segment
@@ -395,7 +383,7 @@ public class OSMReader implements TurnCostParser.ExternalInternalMap {
         }
         // the last segment might end at the end of the way
         if (segment.size() > 1)
-            handleSegment(segment, edgeFlags, way);
+            handleSegment(segment, way);
     }
 
     private void setArtificialWayTags(ReaderWay way) {
@@ -601,13 +589,37 @@ public class OSMReader implements TurnCostParser.ExternalInternalMap {
     /**
      * This method creates from an OSM way (via the osm ids) one or more edges in the graph.
      */
-    void handleSegment(final LongIndexedContainer osmNodeIds, final IntsRef flags, final ReaderWay way) {
+    void handleSegment(final LongIndexedContainer osmNodeIds, final ReaderWay way) {
+        handleSegment(osmNodeIds, way, false);
+    }
+
+    void handleSegment(final LongIndexedContainer osmNodeIds, final ReaderWay way, boolean barrier) {
         if (osmNodeIds.size() < 2)
             throw new IllegalArgumentException("Segment size must be >= 2");
         if (osmNodeIds.size() == 2 && osmNodeIds.get(0) == osmNodeIds.get(osmNodeIds.size() - 1)) {
             // this is just a plain loop that connects an osm node to itself -> ignore this
             LOGGER.warn("Loop in OSM way " + way.getId() + ", duplicate node: " + osmNodeIds.get(0));
             return;
+        }
+        IntsRef relationFlags = getRelFlagsMap(way.getId());
+        // todonow: we now calculate edge flags *per segment* (yay!), so we will also be able to consider node tags here
+        EncodingManager.AcceptWay acceptWay = new EncodingManager.AcceptWay();
+        // todonow: why is this necessary?
+        if (!encodingManager.acceptWay(way, acceptWay))
+            return;
+        IntsRef flags = encodingManager.handleWayTags(way, acceptWay, IntsRef.deepCopyOf(relationFlags));
+        if (flags.isEmpty())
+            return;
+        if (barrier) {
+            if (osmNodeIds.size() != 2)
+                throw new IllegalStateException("this is just a hack for now");
+            final long nodeFlags = getNodeFlagsMap().get(osmNodeIds.get(0));
+            flags = IntsRef.deepCopyOf(flags);
+            // clear blocked directions from flags
+            for (BooleanEncodedValue accessEnc : encodingManager.getAccessEncFromNodeFlags(nodeFlags)) {
+                accessEnc.setBool(false, flags, false);
+                accessEnc.setBool(true, flags, false);
+            }
         }
         final PointList pointList = new PointList(osmNodeIds.size(), nodeAccess.is3D());
         int firstNode = -1;

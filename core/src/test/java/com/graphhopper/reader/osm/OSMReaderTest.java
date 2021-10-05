@@ -623,7 +623,7 @@ public class OSMReaderTest {
             }
 
             @Override
-            void handleSegment(LongIndexedContainer osmNodeIds, IntsRef wayFlags, ReaderWay way) {
+            void handleSegment(LongIndexedContainer osmNodeIds, ReaderWay way, boolean barrier) {
             }
         };
 
