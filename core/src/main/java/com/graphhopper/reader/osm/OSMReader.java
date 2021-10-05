@@ -606,7 +606,6 @@ public class OSMReader implements TurnCostParser.ExternalInternalMap {
         final PointList pointList = new PointList(osmNodeIds.size(), nodeAccess.is3D());
         final List<EdgeIteratorState> newEdges = new ArrayList<>(5);
         int firstNode = -1;
-        int lastInBoundsPillarNode = -1;
         try {
             // #2221: ways might include nodes at the beginning or end that do not exist -> skip them
             int firstExisting = -1;
@@ -635,40 +634,15 @@ public class OSMReader implements TurnCostParser.ExternalInternalMap {
                 if (tmpNode == EMPTY_NODE)
                     continue;
 
-                // skip osmIds with no associated pillar or tower id (e.g. !OSMReader.isBounds)
-                if (tmpNode == TOWER_NODE)
+                // there might be nodes referenced in ways that do not exist as nodes -> we simply ignore them
+                if (tmpNode == TOWER_NODE || tmpNode == PILLAR_NODE)
                     continue;
-
-                if (tmpNode == PILLAR_NODE) {
-                    // In some cases no node information is saved for the specified osmId.
-                    // ie. a way references a <node> which does not exist in the current file.
-                    // => if the node before was a pillar node then convert into to tower node (as it is also end-standing).
-                    if (!pointList.isEmpty() && lastInBoundsPillarNode > -TOWER_NODE) {
-                        // transform the pillar node to a tower node
-                        tmpNode = lastInBoundsPillarNode;
-                        tmpNode = handlePillarNode(tmpNode, osmNodeId, null, true);
-                        tmpNode = -tmpNode - 3;
-                        if (pointList.size() > 1 && firstNode >= 0) {
-                            // TOWER node
-                            newEdges.add(addEdge(firstNode, tmpNode, pointList, flags, wayOsmId));
-                            pointList.clear();
-                            pointList.add(nodeAccess, tmpNode);
-                        }
-                        firstNode = tmpNode;
-                        lastInBoundsPillarNode = -1;
-                    }
-                    continue;
-                }
 
                 if (tmpNode <= -TOWER_NODE && tmpNode >= TOWER_NODE)
                     throw new AssertionError("Mapped index not in correct bounds " + tmpNode + ", " + osmNodeId);
 
                 if (tmpNode > -TOWER_NODE) {
                     boolean convertToTowerNode = i == firstExisting || i == lastExisting;
-                    if (!convertToTowerNode) {
-                        lastInBoundsPillarNode = tmpNode;
-                    }
-
                     // PILLAR node, but convert to towerNode if end-standing
                     tmpNode = handlePillarNode(tmpNode, osmNodeId, pointList, convertToTowerNode);
                 }

@@ -257,6 +257,20 @@ public class OSMReaderTest {
     }
 
     @Test
+    public void testMissingNode_dontSplit() {
+        GraphHopper hopper = new GraphHopperFacade("test-osm12.xml").importOrLoad();
+        Graph graph = hopper.getGraphHopperStorage();
+
+        assertEquals(2, graph.getNodes());
+        assertEquals(1, graph.getEdges());
+        PointList geometry = graph.getEdgeIteratorState(0, 1).fetchWayGeometry(FetchMode.ALL);
+        assertEquals(3, geometry.size());
+        assertEquals(51.249, geometry.getLat(0), 1.e-3);
+        assertEquals(51.229, geometry.getLat(1), 1.e-3);
+        assertEquals(51.200, geometry.getLat(2), 1.e-3);
+    }
+
+    @Test
     public void testDoNotRejectEdgeIfFirstNodeIsMissing_issue2221() {
         GraphHopper hopper = new GraphHopperFacade("test-osm9.xml").importOrLoad();
         GraphHopperStorage graph = hopper.getGraphHopperStorage();
