@@ -49,7 +49,7 @@ graphhopper:
   profiles:
     - name: taxi
       vehicle: taxi
-      weighting: short_fastest
+      weighting: fastest
 
   #  - name: car_with_turn_costs
   #    vehicle: car
