@@ -47,19 +47,19 @@ public class TaxiFlagEncoder extends CarFlagEncoder {
         defaultSpeedMap.put("trunk", 70);
         defaultSpeedMap.put("trunk_link", 65);
         defaultSpeedMap.put("primary", 40);
-        defaultSpeedMap.put("primary_link", 40);
-        defaultSpeedMap.put("secondary", 40);
-        defaultSpeedMap.put("secondary_link", 40);
-        defaultSpeedMap.put("tertiary", 30);
-        defaultSpeedMap.put("tertiary_link", 30);
-        defaultSpeedMap.put("unclassified", 25);
-        defaultSpeedMap.put("residential", 25);
+        defaultSpeedMap.put("primary_link", 30);
+        defaultSpeedMap.put("secondary", 30);
+        defaultSpeedMap.put("secondary_link", 25);
+        defaultSpeedMap.put("tertiary", 25);
+        defaultSpeedMap.put("tertiary_link", 20);
+        defaultSpeedMap.put("unclassified", 20);
+        defaultSpeedMap.put("residential", 20);
         defaultSpeedMap.put("living_street", 5);
         defaultSpeedMap.put("service", 20);
         defaultSpeedMap.put("road", 20);
         defaultSpeedMap.put("track", 15);
 
-        // limit speed on bad surfaces to 20 km/h
+        // limit speed on bad surfaces to 10 km/h
         badSurfaceSpeed = 10;
         maxPossibleSpeed = 140;
     }
@@ -74,10 +74,15 @@ public class TaxiFlagEncoder extends CarFlagEncoder {
         if (way.hasTag("oneway:psv", "no") || way.hasTag("oneway:bus", "no")) { 
             return false;
         }
-        if (way.hasTag("busway", "opposite_lane") || way.hasTag("psv", "opposite_lane") || way.hasTag("bus", "opposite_lane")) { 
+        if (way.hasTag("busway", "opposite_lane")|| way.hasTag("psv", "opposite_lane") || way.hasTag("bus", "opposite_lane")) { 
             return false;
         }
         return super.isOneway(way);
+    }
+
+    private double getSpeedPenalty(ReaderWay way) {
+        if (way.hasTag("tunnel", "yes")) { return 0.9; }
+        return 1;
     }
 
     private double getSpeedReductionFactor(ReaderWay way) {
@@ -89,26 +94,31 @@ public class TaxiFlagEncoder extends CarFlagEncoder {
             case PRIMARY:
             case SECONDARY:
             case TERTIARY:
-                return 0.7;
+                return 0.6;
             case UNCLASSIFIED:
             case RESIDENTIAL:
             case LIVING_STREET:
             case ROAD:
                 return 0.5;
+            case OTHER:
+            case SERVICE:
+            case TRACK:
+            case PATH:
+                return 0.2;
             default:
-                return 0.9;
+                return 0.5;
         }
     }
 
     @Override
     protected double applyMaxSpeed(ReaderWay way, double speed) {
+        double penalty = this.getSpeedPenalty(way);
         double maxSpeed = getMaxSpeed(way);
         // We obey speed limits
         if (isValidSpeed(maxSpeed)) {
-            // We assume that the average speed is 90% of the allowed maximum
-            return maxSpeed * this.getSpeedReductionFactor(way);
+            return maxSpeed * this.getSpeedReductionFactor(way) * penalty;
         }
-        return speed;
+        return speed * penalty;
     }
 
     @Override
