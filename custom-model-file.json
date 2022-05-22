@@ -1,0 +1,35 @@
+{
+    "distance_influence": 100,
+    "speed": [
+     {
+      "if": "road_class == MOTORWAY",
+      "multiply_by": 1
+     },
+     {
+       "else_if": "road_class == PRIMARY || road_class == SECONDARY || road_class == TERTIARY",
+       "multiply_by": 0.6
+     },
+      {
+        "else_if": "road_class == RESIDENTIAL",
+       "multiply_by": 0.4
+      },
+     {
+       "else": "",
+       "multiply_by": 0.25
+     }
+    ],
+    "priority": [
+     {
+      "if": "road_class == PRIMARY || road_class == SECONDARY || road_class == TERTIARY",
+      "multiply_by": 0.6
+     },
+      {
+        "else_if": "road_class != MOTORWAY",
+      "multiply_by": 0.3
+      },
+     {
+      "if": "road_environment == TUNNEL",
+      "multiply_by": 0.8
+     }
+    ]
+   }

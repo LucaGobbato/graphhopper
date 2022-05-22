@@ -114,14 +114,14 @@ public class CarTagParser extends VehicleTagParser {
         defaultSpeedMap.put("trunk", 70);
         defaultSpeedMap.put("trunk_link", 65);
         // linking bigger town
-        defaultSpeedMap.put("primary", 40);
-        defaultSpeedMap.put("primary_link", 35);
+        defaultSpeedMap.put("primary", 50);
+        defaultSpeedMap.put("primary_link", 40);
         // linking towns + villages
-        defaultSpeedMap.put("secondary", 30);
-        defaultSpeedMap.put("secondary_link",250);
+        defaultSpeedMap.put("secondary", 50);
+        defaultSpeedMap.put("secondary_link", 40);
         // streets without middle line separation
-        defaultSpeedMap.put("tertiary", 20);
-        defaultSpeedMap.put("tertiary_link", 20);
+        defaultSpeedMap.put("tertiary", 40);
+        defaultSpeedMap.put("tertiary_link", 30);
         defaultSpeedMap.put("unclassified", 20);
         defaultSpeedMap.put("residential", 20);
         // spielstraße
@@ -289,8 +289,7 @@ public class CarTagParser extends VehicleTagParser {
             return false;
         }
         if (way.hasTag("busway", "opposite_lane")
-            || way.hasTag("psv", "opposite_lane")
-            || way.hasTag("bus", "opposite_lane")) { 
+            || way.hasTag("psv", "opposite_lane") || way.hasTag("bus", "opposite_lane")) { 
             return false;
         }
 
