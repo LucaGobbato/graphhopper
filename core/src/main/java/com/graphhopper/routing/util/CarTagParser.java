@@ -107,23 +107,23 @@ public class CarTagParser extends VehicleTagParser {
         badSurfaceSpeedMap.add("compacted");
 
         // autobahn
-        defaultSpeedMap.put("motorway", 100);
+        defaultSpeedMap.put("motorway", 120);
         defaultSpeedMap.put("motorway_link", 70);
         defaultSpeedMap.put("motorroad", 90);
         // bundesstraße
         defaultSpeedMap.put("trunk", 70);
         defaultSpeedMap.put("trunk_link", 65);
         // linking bigger town
-        defaultSpeedMap.put("primary", 65);
-        defaultSpeedMap.put("primary_link", 60);
+        defaultSpeedMap.put("primary", 40);
+        defaultSpeedMap.put("primary_link", 35);
         // linking towns + villages
-        defaultSpeedMap.put("secondary", 60);
-        defaultSpeedMap.put("secondary_link", 50);
+        defaultSpeedMap.put("secondary", 30);
+        defaultSpeedMap.put("secondary_link",250);
         // streets without middle line separation
-        defaultSpeedMap.put("tertiary", 50);
-        defaultSpeedMap.put("tertiary_link", 40);
-        defaultSpeedMap.put("unclassified", 30);
-        defaultSpeedMap.put("residential", 30);
+        defaultSpeedMap.put("tertiary", 20);
+        defaultSpeedMap.put("tertiary_link", 20);
+        defaultSpeedMap.put("unclassified", 20);
+        defaultSpeedMap.put("residential", 20);
         // spielstraße
         defaultSpeedMap.put("living_street", 5);
         defaultSpeedMap.put("service", 20);
@@ -285,6 +285,15 @@ public class CarTagParser extends VehicleTagParser {
     }
 
     protected boolean isOneway(ReaderWay way) {
+        if (way.hasTag("oneway:psv", "no") || way.hasTag("oneway:bus", "no")) { 
+            return false;
+        }
+        if (way.hasTag("busway", "opposite_lane")
+            || way.hasTag("psv", "opposite_lane")
+            || way.hasTag("bus", "opposite_lane")) { 
+            return false;
+        }
+
         return way.hasTag("oneway", oneways)
                 || way.hasTag("vehicle:backward", restrictedValues)
                 || way.hasTag("vehicle:forward", restrictedValues)

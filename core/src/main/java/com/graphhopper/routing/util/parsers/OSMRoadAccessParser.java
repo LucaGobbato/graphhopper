@@ -66,7 +66,7 @@ public class OSMRoadAccessParser implements TagParser {
             case BIKE:
                 return Arrays.asList("bicycle", "vehicle", "access");
             case CAR:
-                return Arrays.asList("motorcar", "motor_vehicle", "vehicle", "access");
+                return Arrays.asList("motorcar", "motor_vehicle", "vehicle", "access", "psv", "bus");
             case MOTORCYCLE:
                 return Arrays.asList("motorcycle", "motor_vehicle", "vehicle", "access");
             case HGV:
